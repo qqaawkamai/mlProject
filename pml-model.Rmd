@@ -1,0 +1,83 @@
+---
+title: "Prediction of Type of Exercise Based on Accelerometer Data"
+output: html_document
+---
+
+### Introduction
+
+This is a brief summary of the model built to predict the type of exercise based on activity.
+
+### Loading Data and Pre-Processing
+
+```{r, cache=TRUE}
+pml_test <- read.csv("pml-testing.csv")
+pml_train <- read.csv("pml-training.csv")
+```
+
+
+Dimensions of each dataset:
+```{r}
+dim(pml_test)
+dim(pml_train)
+```
+
+
+Check for "NA" values in the datasets. As shown below, almost every row has an "NA" value.
+```{r}
+sum(complete.cases(pml_test))
+sum(complete.cases(pml_train))
+```
+
+
+Remove columns that mostly have "NA" and missing values.
+```{r, cache=TRUE}
+cols <- colSums(is.na(pml_test)) != nrow(pml_test)
+pml_test <- pml_test[, cols]
+pml_train <- pml_train[, cols]
+```
+
+
+Check to confirm NA values no longer appear in the datasets.
+```{r}
+sum(complete.cases(pml_test)) == nrow(pml_test)
+sum(complete.cases(pml_train)) == nrow(pml_train)
+```
+
+
+The first 7 columns are omitted as they mostly identify the user or they were not data acquired by the accelerometer.
+```{r}
+names(pml_test)
+```
+
+
+We remove these columns.
+```{r, cache=TRUE}
+pml_train <- pml_train[,-c(1:7)]
+pml_test <- pml_test[,-c(1:7)]
+```
+
+
+### Model
+
+We use Random Forest to build the prediction model.
+```{r, cache=TRUE}
+library(randomForest)
+set.seed(12345)
+modFit <- randomForest(classe ~ ., data=pml_train)
+```
+
+Since we used Random Forest, we do not need a separate test/cross validation set to get an unbiased test set error.[1] We can see that the model does a fairly good job of predicting the outcome with an out of sample error rate of `r round(modFit$err.rate[500,1]*100,2)`%.
+
+```{r, cache=TRUE}
+modFit
+```
+
+The confusion matrix shows that very few were cases were misclassified.
+
+This model accurately predicts the activities for the 20 cases in the test set. This can be verified by the autograder on Coursera.
+```{r, cache=TRUE}
+predict(modFit, pml_test)
+```
+
+### Links
+[1] http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#ooberr
